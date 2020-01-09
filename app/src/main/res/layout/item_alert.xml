@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_marginBottom="5dp"
+    android:layout_height="wrap_content">
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:padding="16dp">
+
+        <LinearLayout
+            android:id="@+id/linearLayout"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:weightSum="2"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toEndOf="@+id/stock_price"
+            app:layout_constraintTop_toTopOf="parent">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:layout_marginEnd="3dp"
+                android:orientation="vertical">
+
+                <TextView
+                    style="@style/TextStyle.ListItem.Body.Values"
+                    android:text="Over" />
+
+                <TextView
+                    android:id="@+id/above_price"
+                    style="@style/TextStyle.ListItem.Body.Values"
+                    android:textColor="#8BC34A"
+                    tools:drawableLeft="@drawable/ic_arrow_drop_up_green_18dp"
+                    tools:text="$1250" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:orientation="vertical">
+
+                <TextView
+                    style="@style/TextStyle.ListItem.Body.Values"
+                    android:text="Below" />
+
+                <TextView
+                    android:id="@+id/below_price"
+                    style="@style/TextStyle.ListItem.Body.Values"
+                    android:textColor="#F44336"
+                    tools:drawableLeft="@drawable/ic_arrow_drop_down_red_18dp"
+                    tools:text="$1250" />
+            </LinearLayout>
+
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/stock_price"
+            style="@style/TextStyle.ListItem.Body.StockPrice"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/stock_name"
+            tools:text="$1210.35" />
+
+        <TextView
+            android:id="@+id/stock_name"
+            style="@style/TextStyle.ListItem.Title"
+            android:layout_width="91dp"
+            android:layout_height="31dp"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            tools:text="BTC/USD" />
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+</androidx.cardview.widget.CardView>
