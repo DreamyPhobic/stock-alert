@@ -2,31 +2,24 @@ package com.dreamyphobic.stockalert.ui.home;
 
 import android.app.ActivityManager;
 import android.app.Dialog;
-import android.content.ComponentName;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
-import android.content.ServiceConnection;
-import android.graphics.drawable.ColorDrawable;
+import android.content.IntentFilter;
 import android.os.Bundle;
-import android.os.IBinder;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.Window;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
-import androidx.lifecycle.Observer;
-import androidx.lifecycle.ViewModelProviders;
+import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
-import androidx.recyclerview.widget.StaggeredGridLayoutManager;
 
 import com.dreamyphobic.stockalert.R;
 import com.dreamyphobic.stockalert.database.DBHandler;
@@ -34,18 +27,15 @@ import com.dreamyphobic.stockalert.model.AssertQuote;
 import com.dreamyphobic.stockalert.model.PriceAlert;
 import com.dreamyphobic.stockalert.util.RatesUpdateListener;
 import com.dreamyphobic.stockalert.util.RatesUpdateService;
-import com.github.nkzawa.socketio.client.Socket;
+import com.dreamyphobic.stockalert.util.Restarter;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Objects;
 
-public class HomeFragment extends Fragment implements ServiceConnection, RatesUpdateListener, LiveRateClickListener,PriceAlertClickListener {
+public class HomeFragment extends Fragment implements  RatesUpdateListener, LiveRateClickListener,PriceAlertClickListener {
 
-    private HomeViewModel homeViewModel;
-    private Socket socket;
-    private RatesUpdateService mService;
-    private RatesUpdateService s;
     private RecyclerView liveRateRV;
     private LiveRateAdapter liveRateAdapter;
     private boolean isActivated = false;
@@ -58,16 +48,8 @@ public class HomeFragment extends Fragment implements ServiceConnection, RatesUp
 
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
-        homeViewModel =
-                ViewModelProviders.of(this).get(HomeViewModel.class);
         View root = inflater.inflate(R.layout.fragment_home, container, false);
-//        final TextView textView = root.findViewById(R.id.text_home);
-        homeViewModel.getText().observe(this, new Observer<String>() {
-            @Override
-            public void onChanged(@Nullable String s) {
-//                textView.setText(s);
-            }
-        });
+
 
         dbHandler = new DBHandler(getContext());
         liveRateRV = root.findViewById(R.id.liveRateRV);
@@ -84,37 +66,32 @@ public class HomeFragment extends Fragment implements ServiceConnection, RatesUp
         priceAlertRV.setNestedScrollingEnabled(false);
         updateAlerts();
 
-
-
+        //service communication
+        IntentFilter filter = new IntentFilter();
+        filter.addAction(RatesUpdateService.INITIAL_DATA);
+        filter.addAction(RatesUpdateService.LIVE_DATA);
+        filter.addAction(RatesUpdateService.REFRESH_ALERTS);
+        LocalBroadcastManager bm = LocalBroadcastManager.getInstance(getContext());
+        bm.registerReceiver(mBroadcastReceiver, filter);
         return root;
     }
 
-    private boolean isMyServiceRunning(Class<?> serviceClass) {
-        ActivityManager manager = (ActivityManager) getActivity().getSystemService(Context.ACTIVITY_SERVICE);
-        for (ActivityManager.RunningServiceInfo service : manager.getRunningServices(Integer.MAX_VALUE)) {
-            if (serviceClass.getName().equals(service.service.getClassName())) {
-
-                Log.i ("Service status", "Running");
-                return true;
+    private final BroadcastReceiver mBroadcastReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            switch(Objects.requireNonNull(intent.getAction())){
+                case RatesUpdateService.INITIAL_DATA:
+                    initialUpdate((Map<String, AssertQuote>) intent.getSerializableExtra(RatesUpdateService.EXTRA_INITIAL_DATA));
+                    break;
+                case RatesUpdateService.LIVE_DATA:
+                    itemUpdate((AssertQuote) intent.getSerializableExtra(RatesUpdateService.EXTRA_LIVE_DATA_QUOTE));
+                    break;
+                case RatesUpdateService.REFRESH_ALERTS:
+                    updateAlerts();
+                    break;
             }
         }
-        Log.i ("Service status", "Not running");
-        return false;
-    }
-
-    @Override
-    public void onServiceConnected(ComponentName name, IBinder service) {
-        RatesUpdateService.MyBinder b = (RatesUpdateService.MyBinder) service;
-        s = b.getService();
-        s.registerListener(this);
-        Toast.makeText(getContext(), "Connected", Toast.LENGTH_SHORT).show();
-
-    }
-
-    @Override
-    public void onServiceDisconnected(ComponentName name) {
-        s= null;
-    }
+    };
 
     @Override
     public void initialUpdate(Map<String, AssertQuote> stringAssertQuoteMap) {
@@ -157,28 +134,27 @@ public class HomeFragment extends Fragment implements ServiceConnection, RatesUp
     @Override
     public void onPause() {
         super.onPause();
-        if(isActivated){
-            getActivity().unbindService(this);
-            isActivated = false;
-        }
     }
 
     @Override
     public void onResume() {
         super.onResume();
-        mService = new RatesUpdateService();
-        Intent mServiceIntent = new Intent(getContext(), mService.getClass());
-        if (isMyServiceRunning(mService.getClass())) {
-            getActivity().stopService(mServiceIntent);
+        if (!isMyServiceRunning(RatesUpdateService.class)) {
+            Intent broadcastIntent = new Intent();
+            broadcastIntent.setAction("restartservice");
+            broadcastIntent.setClass(getContext(), Restarter.class);
+            getContext().sendBroadcast(broadcastIntent);
         }
-        isActivated = true;
-        getActivity().bindService(mServiceIntent, this, Context.BIND_AUTO_CREATE);
+        else{
+            initialUpdate(RatesUpdateService.quotes);
+        }
     }
 
     @Override
     public void onDestroy() {
+        LocalBroadcastManager bm = LocalBroadcastManager.getInstance(getContext());
+        bm.unregisterReceiver(mBroadcastReceiver);
         super.onDestroy();
-
     }
 
     @Override
@@ -215,7 +191,6 @@ public class HomeFragment extends Fragment implements ServiceConnection, RatesUp
                 alert.setBelow(below);
                 dbHandler.insertPriceAlert(alert);
                 updateAlerts();
-                s.updateAlerts();
 //                    Toast.makeText(getApplicationContext(),"Cancel" ,Toast.LENGTH_SHORT).show();
                 dialog.dismiss();
             }
@@ -232,5 +207,17 @@ public class HomeFragment extends Fragment implements ServiceConnection, RatesUp
     @Override
     public void onClick(PriceAlert priceAlert) {
 
+    }
+    private boolean isMyServiceRunning(Class<?> serviceClass) {
+        ActivityManager manager = (ActivityManager) getActivity().getSystemService(Context.ACTIVITY_SERVICE);
+        for (ActivityManager.RunningServiceInfo service : manager.getRunningServices(Integer.MAX_VALUE)) {
+            if (serviceClass.getName().equals(service.service.getClassName())) {
+
+                Log.i ("Service status", "Running");
+                return true;
+            }
+        }
+        Log.i ("Service status", "Not running");
+        return false;
     }
 }

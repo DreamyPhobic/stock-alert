@@ -27,7 +27,7 @@ dependencies {
     implementation 'androidx.navigation:navigation-fragment:2.0.0'
     implementation 'androidx.navigation:navigation-ui:2.0.0'
     implementation 'androidx.lifecycle:lifecycle-extensions:2.0.0'
-    compile ('com.github.nkzawa:socket.io-client:0.5.0') {
+    compile ('io.socket:socket.io-client:1.0.0') {
         exclude group: 'org.json', module: 'json'
     }
     testImplementation 'junit:junit:4.12'

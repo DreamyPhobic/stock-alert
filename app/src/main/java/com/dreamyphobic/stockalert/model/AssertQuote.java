@@ -1,6 +1,8 @@
 package com.dreamyphobic.stockalert.model;
 
-public class AssertQuote {
+import java.io.Serializable;
+
+public class AssertQuote implements Serializable {
     private String currency;
     private double bid;
     private double ask;

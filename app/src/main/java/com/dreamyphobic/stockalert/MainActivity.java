@@ -8,8 +8,7 @@ import android.content.ServiceConnection;
 import android.os.Bundle;
 
 import com.dreamyphobic.stockalert.util.RatesUpdateService;
-import com.github.nkzawa.socketio.client.IO;
-import com.github.nkzawa.socketio.client.Socket;
+
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.snackbar.Snackbar;
 
@@ -34,12 +33,13 @@ import android.widget.Toast;
 
 import java.net.URISyntaxException;
 
+import io.socket.client.Socket;
+
 public class MainActivity extends AppCompatActivity {
 
     private AppBarConfiguration mAppBarConfiguration;
     private RatesUpdateService mService;
     private Intent mServiceIntent;
-    private Socket socket;
     private RatesUpdateService s;
 
     @Override
