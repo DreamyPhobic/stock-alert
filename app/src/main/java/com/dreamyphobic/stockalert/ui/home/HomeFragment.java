@@ -13,6 +13,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -45,12 +46,13 @@ public class HomeFragment extends Fragment implements  RatesUpdateListener, Live
     private ArrayList<PriceAlert> alerts = new ArrayList<>();
     private DBHandler dbHandler;
     private Map<String,Integer> keyMap = new LinkedHashMap<>();
+    private ProgressBar progressBar;
 
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
         View root = inflater.inflate(R.layout.fragment_home, container, false);
 
-
+        progressBar = root.findViewById(R.id.progress_bar);
         dbHandler = new DBHandler(getContext());
         liveRateRV = root.findViewById(R.id.liveRateRV);
         liveRateRV.setLayoutManager(new LinearLayoutManager(getContext(),LinearLayoutManager.HORIZONTAL,false));
@@ -81,6 +83,7 @@ public class HomeFragment extends Fragment implements  RatesUpdateListener, Live
         public void onReceive(Context context, Intent intent) {
             switch(Objects.requireNonNull(intent.getAction())){
                 case RatesUpdateService.INITIAL_DATA:
+                    progressBar.setVisibility(View.GONE);
                     initialUpdate((Map<String, AssertQuote>) intent.getSerializableExtra(RatesUpdateService.EXTRA_INITIAL_DATA));
                     break;
                 case RatesUpdateService.LIVE_DATA:
@@ -146,6 +149,7 @@ public class HomeFragment extends Fragment implements  RatesUpdateListener, Live
             getContext().sendBroadcast(broadcastIntent);
         }
         else{
+            progressBar.setVisibility(View.GONE);
             initialUpdate(RatesUpdateService.quotes);
         }
     }
